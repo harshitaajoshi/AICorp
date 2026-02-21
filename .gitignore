@@ -1,0 +1,8 @@
+WALLETS.md
+.env
+node_modules/
+artifacts/
+cache/
+pnpm-lock.yaml
+*.log
+.DS_Store
