@@ -172,7 +172,15 @@ function makeServiceHandler(servicePath) {
  */
 export function createManagerApp() {
   const app = express();
-  app.use(cors());
+  app.use(cors({
+    origin: [
+      "http://localhost:3000",
+      "https://aicorp-eta.vercel.app",
+      /\.vercel\.app$/,
+    ],
+    methods: ["GET", "POST", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization", "X-PAYMENT", "X-PAYMENT-RESPONSE"],
+  }));
   app.use(express.json({ limit: "1mb" })); // allow pasting full contracts
 
   // ── x402 Payment Middleware ──────────────────────────────────────────────
