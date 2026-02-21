@@ -1,0 +1,39 @@
+{
+  "name": "AICorp",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node src/server.mjs",
+    "test:e2e": "node test-e2e.mjs",
+    "test:agents": "node test-agents.mjs",
+    "test:cfo": "node test-agents.mjs cfo",
+    "test:alpha": "node test-agents.mjs alpha",
+    "test:dd": "node test-agents.mjs dd",
+    "test:audit": "node test-agents.mjs audit",
+    "balances": "node check-balances.mjs"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "packageManager": "pnpm@10.30.1",
+  "dependencies": {
+    "@0glabs/0g-serving-broker": "^0.7.1",
+    "@x402/core": "^2.4.0",
+    "@x402/evm": "^2.4.0",
+    "@x402/express": "^2.4.0",
+    "@x402/fetch": "^2.4.0",
+    "cors": "^2.8.6",
+    "dotenv": "^17.3.1",
+    "ethers": "^6.16.0",
+    "express": "^5.2.1",
+    "viem": "^2.46.2"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "5.0.0",
+    "@openzeppelin/contracts": "^5.4.0",
+    "hardhat": "2.22.19"
+  },
+  "type": "commonjs"
+}
