@@ -1,0 +1,363 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&family=EB+Garamond:ital,wght@1,400;1,500;1,600;1,700;1,800&display=swap');
+
+/* ── Base ──────────────────────────────────────────────────────── */
+:root {
+  --accent: #5EEAD4;
+  --accent-dim: #2DD4BF;
+  --accent-glow: rgba(94, 234, 212, 0.15);
+  --surface: #0d0d0d;
+  --border: #1f1f1f;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #1f1f1f transparent;
+}
+
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #1f1f1f; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #333; }
+
+body {
+  background: #000000;
+  color: #f0f0f0;
+  font-family: 'Inter', system-ui, sans-serif;
+  overflow-x: hidden;
+}
+
+/* ── Animated Grid Background ──────────────────────────────────── */
+.grid-bg {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(94, 234, 212, 0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(94, 234, 212, 0.02) 1px, transparent 1px);
+  background-size: 60px 60px;
+  animation: grid-flow 25s linear infinite;
+}
+
+.grid-bg::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse 50% 40% at 50% 0%, rgba(94, 234, 212, 0.04), transparent 70%);
+}
+
+/* ── Scanline Overlay ──────────────────────────────────────────── */
+.scanlines {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 3px,
+    rgba(0, 0, 0, 0.015) 3px,
+    rgba(0, 0, 0, 0.015) 6px
+  );
+}
+
+/* ── Glow Card ─────────────────────────────────────────────────── */
+.glow-card {
+  position: relative;
+  background: #0d0d0d;
+  border: 1px solid #1f1f1f;
+  border-radius: 16px;
+  transition: all 0.3s ease;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.glow-card::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: 16px;
+  padding: 1px;
+  background: linear-gradient(135deg, transparent 40%, rgba(94, 234, 212, 0.12) 50%, transparent 60%);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0;
+  transition: opacity 0.3s;
+  pointer-events: none;
+}
+
+.glow-card:hover::before { opacity: 1; }
+
+.glow-card:hover {
+  border-color: rgba(94, 234, 212, 0.15);
+  box-shadow: 0 0 40px rgba(94, 234, 212, 0.04);
+  transform: translateY(-1px);
+}
+
+/* ── Glow Variants ─────────────────────────────────────────────── */
+.glow-green  { box-shadow: 0 0 30px rgba(94, 234, 212, 0.08), inset 0 0 30px rgba(94, 234, 212, 0.02); }
+.glow-cyan   { box-shadow: 0 0 30px rgba(94, 234, 212, 0.08), inset 0 0 30px rgba(94, 234, 212, 0.02); }
+.glow-amber  { box-shadow: 0 0 30px rgba(255, 167, 38, 0.08), inset 0 0 30px rgba(255, 167, 38, 0.02); }
+.glow-purple { box-shadow: 0 0 30px rgba(139, 92, 246, 0.08), inset 0 0 30px rgba(139, 92, 246, 0.02); }
+.glow-red    { box-shadow: 0 0 30px rgba(255, 51, 102, 0.08), inset 0 0 30px rgba(255, 51, 102, 0.02); }
+
+/* ── Gradient Text ─────────────────────────────────────────────── */
+.text-gradient {
+  background: linear-gradient(90deg, #5EEAD4, #00E5BF, #2DD4BF, #5EEAD4, #00E5BF);
+  background-size: 400% 100%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: gradient-shimmer 6s ease infinite;
+}
+
+@keyframes gradient-shimmer {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.text-gradient-green {
+  background: linear-gradient(135deg, #5EEAD4, #00E5BF);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.text-gradient-fire {
+  background: linear-gradient(135deg, #ff3366, #ffa726, #ff3366);
+  background-size: 300% 300%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: gradient-x 4s ease infinite;
+}
+
+/* ── Animated Border ───────────────────────────────────────────── */
+.animated-border {
+  position: relative;
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.animated-border::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: 16px;
+  background: conic-gradient(from 0deg, transparent 0deg 90deg, #5EEAD4 150deg, #00E5BF 210deg, transparent 270deg 360deg);
+  animation: spin 4s linear infinite;
+  z-index: -1;
+  pointer-events: none;
+}
+
+.animated-border::after {
+  content: '';
+  position: absolute;
+  inset: 1px;
+  border-radius: 14px;
+  background: #0d0d0d;
+  z-index: -1;
+  pointer-events: none;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Live Dot ──────────────────────────────────────────────────── */
+.live-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #5EEAD4;
+  box-shadow: 0 0 6px #5EEAD4, 0 0 16px rgba(94, 234, 212, 0.3);
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+/* ── Shimmer Loading ───────────────────────────────────────────── */
+.shimmer {
+  background: linear-gradient(90deg, #141414 25%, #1f1f1f 50%, #141414 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s linear infinite;
+}
+
+/* ── Display Font (Dashboard hero) ────────────────────────────── */
+.font-serif-display {
+  font-family: 'IBM Plex Mono', 'JetBrains Mono', monospace;
+  letter-spacing: -0.03em;
+}
+
+/* ── Page Heading Font (all other pages) ───────────────────────── */
+.font-page-heading {
+  font-family: 'IBM Plex Mono', 'JetBrains Mono', monospace;
+  font-style: normal;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: -0.02em;
+}
+
+/* ── Data Display ──────────────────────────────────────────────── */
+.mono-data {
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+/* ── Metric Card Hover Flash ───────────────────────────────────── */
+.metric-flash {
+  position: relative;
+  overflow: hidden;
+}
+.metric-flash::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 60%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(94, 234, 212, 0.02), transparent);
+  transition: left 0.6s;
+  pointer-events: none;
+}
+.metric-flash:hover::after {
+  left: 120%;
+}
+
+/* ── Severity Badges ───────────────────────────────────────────── */
+.badge-critical { background: rgba(255,51,102,0.1); color: #ff3366; border: 1px solid rgba(255,51,102,0.2); }
+.badge-high     { background: rgba(255,167,38,0.1);  color: #ffa726; border: 1px solid rgba(255,167,38,0.2); }
+.badge-medium   { background: rgba(251,191,36,0.1);  color: #fbbf24; border: 1px solid rgba(251,191,36,0.2); }
+.badge-low      { background: rgba(35,247,221,0.1);  color: #5EEAD4; border: 1px solid rgba(35,247,221,0.2); }
+.badge-safe     { background: rgba(35,247,221,0.1);  color: #5EEAD4; border: 1px solid rgba(35,247,221,0.2); }
+
+/* ── Neon Button ───────────────────────────────────────────────── */
+.neon-btn {
+  position: relative;
+  background: transparent;
+  border: 1px solid rgba(94, 234, 212, 0.4);
+  color: #5EEAD4;
+  padding: 12px 28px;
+  border-radius: 50px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+  overflow: hidden;
+}
+.neon-btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(94, 234, 212, 0.1);
+  opacity: 0;
+  transition: opacity 0.3s;
+  pointer-events: none;
+  border-radius: 50px;
+}
+.neon-btn:hover::before { opacity: 1; }
+.neon-btn:hover {
+  border-color: #5EEAD4;
+  box-shadow: 0 0 20px rgba(94, 234, 212, 0.15);
+  transform: translateY(-1px);
+}
+.neon-btn:active { transform: translateY(0); }
+.neon-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+/* ── Filled accent button ──────────────────────────────────────── */
+.accent-btn {
+  position: relative;
+  background: #5EEAD4;
+  border: none;
+  color: #000000;
+  padding: 12px 28px;
+  border-radius: 50px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s;
+  overflow: hidden;
+}
+.accent-btn:hover {
+  box-shadow: 0 0 30px rgba(94, 234, 212, 0.25);
+  transform: translateY(-1px);
+}
+.accent-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+/* ── Transaction Row Animation ─────────────────────────────────── */
+.tx-row {
+  animation: slide-up 0.4s ease-out;
+  transition: background 0.2s;
+}
+.tx-row:hover {
+  background: rgba(94, 234, 212, 0.02);
+}
+
+/* ── Input Glow ────────────────────────────────────────────────── */
+.input-glow {
+  background: #0a0a0a;
+  border: 1px solid #1f1f1f;
+  border-radius: 12px;
+  padding: 14px 18px;
+  color: #f0f0f0;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  transition: all 0.3s;
+  outline: none;
+  width: 100%;
+}
+.input-glow:focus {
+  border-color: rgba(94, 234, 212, 0.4);
+  box-shadow: 0 0 20px rgba(94, 234, 212, 0.06);
+}
+.input-glow::placeholder {
+  color: #444;
+}
+
+/* ── Agent Avatar ──────────────────────────────────────────────── */
+.agent-avatar {
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  position: relative;
+}
+.agent-avatar::after {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: 18px;
+  background: inherit;
+  filter: blur(12px);
+  opacity: 0.3;
+  z-index: -1;
+  pointer-events: none;
+}
+
+/* ── Page Transitions ──────────────────────────────────────────── */
+.page-enter {
+  animation: fade-in 0.5s ease-out, slide-up 0.5s ease-out;
+}
+
+/* ── Stagger Children ──────────────────────────────────────────── */
+.stagger > * { animation: fade-in 0.5s ease-out backwards; }
+.stagger > *:nth-child(1) { animation-delay: 0.05s; }
+.stagger > *:nth-child(2) { animation-delay: 0.10s; }
+.stagger > *:nth-child(3) { animation-delay: 0.15s; }
+.stagger > *:nth-child(4) { animation-delay: 0.20s; }
+.stagger > *:nth-child(5) { animation-delay: 0.25s; }
+.stagger > *:nth-child(6) { animation-delay: 0.30s; }
+.stagger > *:nth-child(7) { animation-delay: 0.35s; }
+.stagger > *:nth-child(8) { animation-delay: 0.40s; }
