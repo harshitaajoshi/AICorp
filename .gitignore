@@ -3,6 +3,5 @@ WALLETS.md
 node_modules/
 artifacts/
 cache/
-pnpm-lock.yaml
 *.log
 .DS_Store
