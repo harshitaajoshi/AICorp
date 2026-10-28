@@ -1,256 +1,113 @@
-<div align="center">
-
 # AICorp
 
-**An autonomous AI corporation that runs itself.**
+**A company with no humans in it.** Four AI agents sell research reports for
+USDC, get paid a salary on-chain before they start work, and pay for their own
+inference. A Solidity treasury keeps the books and shuts the company down if it
+ever runs out of money.
 
-Four specialist agents sell financial intelligence on demand.<br/>
-Each earns its own payroll. Each pays for its own compute.<br/>
-Every dollar flows through an on-chain treasury. No humans required.
+**[aicorp-eta.vercel.app](https://aicorp-eta.vercel.app)** · [Treasury on Basescan](https://sepolia.basescan.org/address/0xfaFeEC111670c06835f65EF9aebF964A8150f1E1) · Built at ETHDenver 2026
 
-<br/>
+![The live dashboard: revenue, payroll, net margin and solvency, read from the treasury contract](docs/images/dashboard.jpg)
 
-![x402](https://img.shields.io/badge/x402-Payments-0052FF?style=flat-square&logoColor=white)
-![0G Labs](https://img.shields.io/badge/0G_Labs-AI_Inference-8b5cf6?style=flat-square)
-![Base](https://img.shields.io/badge/Base_Sepolia-On_Chain-0052FF?style=flat-square&logo=ethereum&logoColor=white)
-![Next.js](https://img.shields.io/badge/Next.js_14-Frontend-black?style=flat-square&logo=next.js)
-![Node.js](https://img.shields.io/badge/Node.js-Backend-339933?style=flat-square&logo=node.js&logoColor=white)
+<sub>The live dashboard. Every number is read from the treasury contract on Base Sepolia: 169 ledger entries so far.</sub>
 
-</div>
+## What happens on one request
 
----
+1. **A client pays.** The request carries an [x402](https://x402.org) USDC
+   micropayment; without it the API answers `402 Payment Required`.
+2. **The manager checks the books.** It records the revenue on-chain and
+   refuses the job if the treasury's net margin is negative.
+3. **The specialist gets paid first.** Its payroll (70% of the price) is
+   transferred in USDC and logged before any work starts.
+4. **The specialist does the work** on [0G](https://0g.ai) decentralized
+   inference, and the compute bill is logged as operating cost.
+5. **The client gets the report** with links to every transaction it caused.
 
-## 🏛️ What is AICorp?
+The whole loop takes one HTTP call and leaves three entries on-chain.
 
-AICorp is a **self-sustaining AI financial intelligence firm** built on real corporate economics.
+## The agents
 
-When a client requests a report, a USDC micropayment is collected via x402, the Manager Agent verifies solvency, dispatches the right specialist, pays the worker its payroll, and the agent runs decentralized inference via 0G Labs — all autonomously, all on-chain.
+| Agent | Produces | Price |
+| --- | --- | --- |
+| CFO Agent | Protocol financial health: inflows, outflows, runway, `SOLVENT` / `AT_RISK` / `INSOLVENT` | $0.25 |
+| Alpha Analyst | Investment brief: thesis, on-chain signals, `BUY` / `WATCH` / `AVOID` | $0.20 |
+| Due Diligence Agent | VC-style review: product, tokenomics, team, `PASS` / `WATCH` / `RED_FLAG` | $0.30 |
+| Smart Contract Auditor | Findings with severity and fixes, `SAFE` / `MODERATE` / `CRITICAL` | $0.35 |
 
-The corporation runs a live P&L:
+Try any of them from the [Service Terminal](https://aicorp-eta.vercel.app/services).
+The demo routes run the full pipeline (real payroll, real inference, real
+ledger entries on testnet) without asking you for a wallet.
 
-- 💰 **Revenue** — collected per report via x402 HTTP-native payments
-- 💸 **Payroll** — sent in USDC to each agent before it starts working
-- 🧠 **Compute (OPEX)** — paid to 0G Labs inference, logged on-chain
-- 📊 **Net Margin** — tracked in real time, visible on the dashboard
-- 🔒 **Solvency Enforcement** — operations halt automatically if treasury turns negative
+![The on-chain ledger: every revenue, payroll and compute entry with a Basescan link](docs/images/ledger.jpg)
 
----
+## How it works
 
-## 🗺️ Architecture
+**Treasury** ([`contracts/Treasury.sol`](contracts/Treasury.sol)). The books
+live in a contract, not a database. Only the manager can write to it:
+`recordRevenue`, `recordPayroll` and `recordComputeCost` append to a ledger and
+emit events, `netMargin()` and `isSolvent()` are views anyone can check, and a
+`SolvencyAlert` fires when margin goes negative. The dashboard reads straight
+from the contract, so it cannot show numbers the chain does not have.
 
-```
-  📥 Client Request
-        │
-        ▼
-  🏛️  Manager Agent          receives x402 payment · verifies solvency
-        │                    records revenue · routes to specialist
-        │
-        ├── 📊  CFO Agent          $0.25   financial health report
-        ├── 📈  Alpha Analyst       $0.20   investment research brief
-        ├── 🔍  DD Agent            $0.30   VC-style due diligence
-        └── 🛡️  Auditor Agent       $0.35   smart contract audit
-                    │
-                    ▼
-              🧠  0G Inference      decentralized AI compute (OPEX)
-                    │
-                    ▼
-           🔵  Base Sepolia         revenue · payroll · compute logged on-chain
-```
+**Manager** ([`src/agents/manager.mjs`](src/agents/manager.mjs)). An Express
+server with x402 payment middleware. It verifies the payment, checks solvency,
+routes to the right specialist and assembles the response.
 
----
+**Workers** ([`src/agents/workers/`](src/agents/workers)). Each specialist
+shares one loop in `base-worker.mjs`: receive payroll, run inference with its
+own system prompt, log the compute cost, return structured JSON.
 
-## 🤖 The Agents
+**Identity** ([`contracts/AgentRegistry.sol`](contracts/AgentRegistry.sol)).
+The manager holds an ERC-8004 agent identity on Kite testnet, so other agents
+can discover and verify it.
 
-| | Agent | What it produces | Price |
-|---|---|---|---|
-| 📊 | **CFO Agent** | Protocol financial health — inflows, outflows, runway estimate, treasury score, `SOLVENT` / `AT_RISK` / `INSOLVENT` | `$0.25` |
-| 📈 | **Alpha Analyst** | Investment brief — narrative, thesis, onchain signals, `BUY` / `WATCH` / `AVOID` | `$0.20` |
-| 🔍 | **DD Agent** | VC due diligence — product, tokenomics, team, competition, `PASS` / `WATCH` / `RED_FLAG` | `$0.30` |
-| 🛡️ | **Auditor Agent** | Contract audit — vulnerability findings, severity scores, `SAFE` / `MODERATE` / `CRITICAL` | `$0.35` |
+| Layer | Stack |
+| --- | --- |
+| Payments | x402 (Coinbase CDP), USDC on Base Sepolia |
+| Contracts | Solidity, Hardhat, OpenZeppelin |
+| Inference | 0G Labs serving broker |
+| Backend | Node.js, Express, ethers.js, viem (Railway) |
+| Frontend | Next.js 14, Tailwind, Framer Motion (Vercel) |
 
-Each agent receives its USDC payroll **before** inference runs. Compute cost is deducted from margin. Every entry recorded on-chain.
+## Run it locally
 
----
+Requires Node 18+, pnpm, and testnet wallets with Base Sepolia ETH and USDC
+plus 0G testnet tokens.
 
-## ⚙️ Technology
-
-| Layer | Technology | Role |
-|---|---|---|
-| 💳 Payments | [x402 Protocol](https://x402.org) by Coinbase CDP | HTTP-native USDC micropayments — `402` returned without payment |
-| 🧠 Inference | [0G Labs](https://0g.ai) decentralized compute | All agents run 0G inference — cost tracked as corporate OPEX |
-| 🔵 On-chain | Base Sepolia + Solidity | Treasury, USDC payroll, ledger — all verifiable on Basescan |
-| 🪪 Identity | ERC-8004 on Kite Testnet | Persistent on-chain agent identity |
-| 🖥️ Backend | Node.js · Express · Ethers.js · Viem | Manager Agent + service routing |
-| 🎨 Frontend | Next.js 14 · Tailwind · Framer Motion | Live dashboard with tilt cards, cursor spotlight, page transitions |
-
----
-
-## 📁 Repository Structure
-
-```
-AICorp/
-│
-├── 📜 contracts/
-│   ├── Treasury.sol          # On-chain P&L ledger (Base Sepolia)
-│   └── AgentRegistry.sol     # ERC-8004 agent identity (Kite Testnet)
-│
-├── ⚙️  src/
-│   ├── server.mjs            # Express entry point
-│   ├── agents/
-│   │   ├── manager.mjs       # Manager Agent + x402 middleware
-│   │   └── workers/
-│   │       ├── base-worker.mjs     # Shared payroll → inference → log loop
-│   │       ├── cfo-agent.mjs       # Worker A
-│   │       ├── alpha-agent.mjs     # Worker B
-│   │       ├── dd-agent.mjs        # Worker C
-│   │       └── auditor-agent.mjs   # Worker D
-│   └── services/
-│       ├── chain.mjs               # Ethers provider + NonceManager
-│       ├── treasury.mjs            # Treasury contract read/write
-│       ├── usdc.mjs                # USDC balance + transfer
-│       └── ogInference.mjs         # 0G Labs inference integration
-│
-└── 🎨 frontend/
-    └── src/
-        ├── app/
-        │   ├── page.tsx            # Live P&L dashboard
-        │   ├── services/           # Service Terminal
-        │   ├── agents/             # Agent roster + live stats
-        │   ├── ledger/             # On-chain transaction history
-        │   └── about/              # Problem · Solution · FAQ
-        └── components/
-            ├── HeroCanvas.tsx      # Canvas particle wave background
-            ├── TiltCard.tsx        # 3D perspective tilt on hover
-            └── CursorSpotlight.tsx # Mouse-tracking radial glow
-```
-
----
-
-## 🚀 Running Locally
-
-**Requirements:** Node.js 18+, pnpm, Base Sepolia wallets funded with ETH and USDC, 0G testnet tokens.
-
-### Backend
-
-```bash
+```sh
 pnpm install
-cp .env.example .env   # fill in your keys
-node src/server.mjs
+cp .env.example .env            # wallet keys, RPC URLs, treasury address
+node src/server.mjs             # API on :4021
+
+cd frontend && npm install
+NEXT_PUBLIC_BACKEND_URL=http://localhost:4021 npm run dev   # dashboard on :3000
 ```
 
-> Starts on `http://localhost:4021`
+Run a report end to end:
 
-### Frontend
-
-```bash
-cd frontend
-npm install
-cp .env.example .env.local
-# NEXT_PUBLIC_BACKEND_URL=http://localhost:4021
-npm run dev
-```
-
-> Starts on `http://localhost:3000`
-
----
-
-## 🔌 API Reference
-
-Production routes require an x402 USDC payment. Demo routes (prefixed `/demo/`) run the full pipeline without payment — used by the frontend live demo.
-
-### Example — CFO Report
-
-```bash
+```sh
 curl -X POST http://localhost:4021/demo/cfo-report \
-  -H "Content-Type: application/json" \
-  -d '{"target": "Uniswap"}'
+  -H 'Content-Type: application/json' -d '{"target": "Aave"}'
 ```
 
-```jsonc
-{
-  "success": true,
-  "agent": "CFO Agent",
-  "report": {
-    "protocol_name": "Uniswap",
-    "financial_summary": {
-      "treasury_health_score": 9,
-      "net_position": "Surplus"
-    },
-    "risk_flags": ["High ETH/USDC concentration"],
-    "recommendation": "SOLVENT"
-  },
-  "corporate": {
-    "revenue": "$7.15 USDC",
-    "payroll": "$4.83 USDC",
-    "netMargin": "$2.32 USDC",
-    "isSolvent": true
-  },
-  "worker": {
-    "payroll": "$0.1750 USDC",
-    "payrollTx": "https://sepolia.basescan.org/tx/0x..."
-  }
-}
-```
+| Route | Description |
+| --- | --- |
+| `POST /cfo-report`, `/alpha-brief`, `/due-diligence`, `/audit` | Paid with x402 |
+| `POST /demo/<service>` | Same pipeline, no payment, for the live demo |
+| `GET /status` | Treasury stats, per-agent P&L and the ledger |
+| `GET /services` | Service catalogue with prices |
 
-### Routes
+| Directory | Contents |
+| --- | --- |
+| `contracts/` | Treasury and ERC-8004 agent registry |
+| `scripts/` | Contract deployment |
+| `src/` | Manager, workers, chain and inference services |
+| `frontend/` | Dashboard, service terminal, ledger, agents |
 
-| Route | Method | Auth | Description |
-|---|---|---|---|
-| `/cfo-report` | POST | 🔐 x402 | CFO financial health report |
-| `/alpha-brief` | POST | 🔐 x402 | Investment research brief |
-| `/due-diligence` | POST | 🔐 x402 | VC-style due diligence |
-| `/audit` | POST | 🔐 x402 | Smart contract audit |
-| `/demo/cfo-report` | POST | ✅ open | Full pipeline, no payment |
-| `/demo/alpha-brief` | POST | ✅ open | Full pipeline, no payment |
-| `/demo/due-diligence` | POST | ✅ open | Full pipeline, no payment |
-| `/demo/audit` | POST | ✅ open | Full pipeline, no payment |
-| `/status` | GET | ✅ open | Treasury stats + agent P&L |
-| `/services` | GET | ✅ open | Service catalogue |
-| `/health` | GET | ✅ open | Health check |
-
----
-
-## 🔑 Environment Variables
-
-```bash
-# 👛 Wallets
-MANAGER_PRIVATE_KEY=0x...
-WORKER_PRIVATE_KEY=0x...
-
-# 🔵 Base Sepolia
-BASE_SEPOLIA_RPC=https://sepolia.base.org
-TREASURY_CONTRACT_ADDRESS=0x...
-
-# 💳 x402
-X402_FACILITATOR_URL=https://x402.org/facilitator
-X402_NETWORK=eip155:84532
-
-# 🧠 0G Labs
-OG_RPC_URL=https://evmrpc-testnet.0g.ai
-OG_PRIVATE_KEY=0x...
-
-# 🪪 Kite AI
-KITE_ERC8004_REGISTRY=0x...
-KITE_AGENT_ID=0
-
-# 🖥️ Server
-PORT=4021
-```
-
----
-
-## ⛓️ On-Chain
+## On-chain
 
 | | Network | Address |
-|---|---|---|
-| 🏦 Treasury Contract | Base Sepolia | [`0xfaFeEC111670c06835f65EF9aebF964A8150f1E1`](https://sepolia.basescan.org/address/0xfaFeEC111670c06835f65EF9aebF964A8150f1E1) |
-| 👤 Manager Wallet | Base Sepolia | `0x32d863A717EFf11eB168A40AceF65316496249D0` |
-| 🪪 Agent Identity | Kite Testnet | ERC-8004 token #0 |
-
----
-
-<div align="center">
-
-*ETHDenver 2026 · New France Village · Future of Finance*
-
-</div>
+| --- | --- | --- |
+| Treasury | Base Sepolia | [`0xfaFeEC111670c06835f65EF9aebF964A8150f1E1`](https://sepolia.basescan.org/address/0xfaFeEC111670c06835f65EF9aebF964A8150f1E1) |
+| Manager wallet | Base Sepolia | [`0x32d863A717EFf11eB168A40AceF65316496249D0`](https://sepolia.basescan.org/address/0x32d863A717EFf11eB168A40AceF65316496249D0) |
+| Agent identity | Kite testnet | ERC-8004 token #0 |
