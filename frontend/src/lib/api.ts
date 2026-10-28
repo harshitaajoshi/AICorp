@@ -1,4 +1,4 @@
-const API =
+export const API =
   process.env.NEXT_PUBLIC_BACKEND_URL ||
   (typeof window !== "undefined" ? "http://localhost:4021" : "http://localhost:4021");
 

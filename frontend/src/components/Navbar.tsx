@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
+import { API } from "@/lib/api";
 
 const LINKS = [
   { href: "/", label: "Dashboard" },
@@ -19,7 +20,7 @@ export default function Navbar() {
   useEffect(() => {
     const poll = async () => {
       try {
-        const r = await fetch("http://localhost:4021/health");
+        const r = await fetch(`${API}/health`);
         setAlive(r.ok);
       } catch {
         setAlive(false);
