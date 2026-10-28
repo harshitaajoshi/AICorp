@@ -39,7 +39,7 @@ class OGInferenceService {
         { role: "system", content: systemPrompt },
         { role: "user",   content: prompt },
       ],
-      max_tokens: 512,
+      max_tokens: 4000,
     });
 
     const res = await fetch(`${endpoint}/chat/completions`, {

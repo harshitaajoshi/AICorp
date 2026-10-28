@@ -72,8 +72,38 @@ function FlowAnimation({ step }: { step: number }) {
   );
 }
 
+const isObj = (v: unknown): v is Record<string, unknown> => typeof v === "object" && v !== null && !Array.isArray(v);
+
+/** Agents return their JSON as a string, sometimes in a ```json fence; parse it so the viewer gets fields. */
+function unwrap(v: unknown): unknown {
+  if (typeof v !== "string") return v;
+  const s = v.trim().replace(/^```(?:json)?\s*/i, "").replace(/```$/, "").trim();
+  if (!s.startsWith("{")) return v;
+  try {
+    return JSON.parse(s);
+  } catch {
+    return v;
+  }
+}
+
+// Model-written dates are guesses, not the date the report ran.
+const HIDDEN = new Set(["analysis_date", "report_date", "date"]);
+
+function normalize(report: Record<string, unknown>): Record<string, unknown> {
+  const entries = Object.entries(report).map(([k, v]) => [k, unwrap(v)] as const);
+  // One wrapper key holding the whole report: show its fields directly.
+  const flat = entries.length === 1 && isObj(entries[0][1]) ? entries[0][1] : Object.fromEntries(entries);
+  return Object.fromEntries(Object.entries(flat).filter(([k]) => !HIDDEN.has(k)));
+}
+
+function Text({ value }: { value: unknown }) {
+  if (Array.isArray(value)) return <>{value.map((x) => (isObj(x) ? Object.values(x).join(" · ") : String(x))).join("; ")}</>;
+  if (isObj(value)) return <>{Object.entries(value).map(([k, v]) => `${k.replace(/_/g, " ")}: ${String(v)}`).join(" · ")}</>;
+  return <>{String(value)}</>;
+}
+
 function ReportViewer({ result }: { result: DemoResult }) {
-  const report = result.report;
+  const report = normalize(result.report);
 
   return (
     <motion.div
@@ -110,14 +140,19 @@ function ReportViewer({ result }: { result: DemoResult }) {
                     {key.replace(/_/g, " ")}
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                    {Object.entries(value as Record<string, unknown>).map(([k, v]) => (
-                      <div key={k} className="flex justify-between text-sm border-b border-[#1f1f1f]/30 pb-1">
-                        <span className="text-gray-500">{k.replace(/_/g, " ")}</span>
-                        <span className="text-gray-200 mono-data text-right max-w-[60%] truncate">
-                          {String(v)}
-                        </span>
-                      </div>
-                    ))}
+                    {Object.entries(value as Record<string, unknown>).map(([k, v]) =>
+                      typeof v === "string" && v.length > 60 || typeof v === "object" ? (
+                        <div key={k} className="md:col-span-2 text-sm border-b border-[#1f1f1f]/30 pb-2">
+                          <div className="text-gray-500 mb-1">{k.replace(/_/g, " ")}</div>
+                          <div className="text-gray-200 leading-relaxed"><Text value={v} /></div>
+                        </div>
+                      ) : (
+                        <div key={k} className="flex justify-between text-sm border-b border-[#1f1f1f]/30 pb-1">
+                          <span className="text-gray-500">{k.replace(/_/g, " ")}</span>
+                          <span className="text-gray-200 mono-data text-right max-w-[60%] truncate">{String(v)}</span>
+                        </div>
+                      ),
+                    )}
                   </div>
                 </div>
               );
@@ -132,7 +167,7 @@ function ReportViewer({ result }: { result: DemoResult }) {
                     {(value as string[]).map((item, i) => (
                       <li key={i} className="text-sm text-gray-300 flex items-start gap-2">
                         <span className="text-[#ffa726] mt-1 text-xs">▸</span>
-                        <span>{typeof item === "object" ? JSON.stringify(item) : String(item)}</span>
+                        <span><Text value={item} /></span>
                       </li>
                     ))}
                   </ul>
@@ -146,6 +181,14 @@ function ReportViewer({ result }: { result: DemoResult }) {
                 : String(value).includes("AVOID") || String(value).includes("RED_FLAG") || String(value).includes("CRITICAL") || String(value).includes("INSOLVENT")
                 ? "text-[#ff3366]"
                 : "text-[#ffa726]";
+            if (!isVerdict && String(value).length > 80) {
+              return (
+                <div key={key} className="border-b border-[#1f1f1f]/30 pb-2">
+                  <div className="text-sm text-gray-500 mb-1">{key.replace(/_/g, " ")}</div>
+                  <p className="text-sm text-gray-200 leading-relaxed">{String(value)}</p>
+                </div>
+              );
+            }
             return (
               <div key={key} className="flex justify-between items-start border-b border-[#1f1f1f]/30 pb-2">
                 <span className="text-sm text-gray-500 flex-shrink-0">{key.replace(/_/g, " ")}</span>
